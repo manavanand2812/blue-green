@@ -11,7 +11,8 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/manavanand2812/blue-green.git'
+                // Clone from the 'main' branch
+                git branch: 'main', url: 'https://github.com/manavanand2812/blue-green.git'
             }
         }
         stage('Login to Docker Registry') {
