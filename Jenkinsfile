@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = 'your-docker-image'
-        DOCKER_REGISTRY = 'your-docker-registry'
+        DOCKER_REGISTRY = 'docker.io'  // Or your private registry URL
         DOCKER_USERNAME = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker username
         DOCKER_PASSWORD = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker password
         BLUE_SERVER = 'blue.example.com'
