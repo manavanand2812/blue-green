@@ -2,23 +2,23 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = 'your-docker-image'
-        DOCKER_REGISTRY = 'docker.io'  // Or your private registry URL
-        DOCKER_USERNAME = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker username
-        DOCKER_PASSWORD = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker password
+        DOCKER_REGISTRY = 'docker.io'  // or your private registry URL
+        DOCKER_USERNAME = credentials('bg')  // Credentials ID for Docker username
+        DOCKER_PASSWORD = credentials('bg')  // Credentials ID for Docker password
         BLUE_SERVER = 'blue.example.com'
         GREEN_SERVER = 'green.example.com'
     }
     stages {
         stage('Clone Repo') {
             steps {
-                // Clone from the 'main' branch
                 git branch: 'main', url: 'https://github.com/manavanand2812/blue-green.git'
             }
         }
         stage('Login to Docker Registry') {
             steps {
                 script {
-                    // Login to Docker Registry
+                    echo "Logging in to Docker registry"
+                    echo "DOCKER_USERNAME: $DOCKER_USERNAME"  // Debugging step
                     sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
                 }
             }
@@ -26,7 +26,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
+                    echo "Building Docker image"
                     sh 'docker build -t ${DOCKER_IMAGE} .'
                 }
             }
@@ -34,7 +34,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Tag and push the Docker image
+                    echo "Pushing Docker image to registry"
                     sh 'docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
                     sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
                 }
@@ -43,7 +43,7 @@ pipeline {
         stage('Deploy to Blue') {
             steps {
                 script {
-                    // Deploy to the Blue server
+                    echo "Deploying to Blue server"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml up -d'"
                 }
@@ -57,7 +57,7 @@ pipeline {
         stage('Switch Traffic to Blue') {
             steps {
                 script {
-                    // Restart Blue deployment and bring down the Green deployment
+                    echo "Switching traffic to Blue server"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml restart'"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml down'"
                 }
@@ -66,7 +66,7 @@ pipeline {
         stage('Deploy to Green') {
             steps {
                 script {
-                    // Deploy to the Green server
+                    echo "Deploying to Green server"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml up -d'"
                 }
@@ -80,7 +80,7 @@ pipeline {
         stage('Switch Traffic to Green') {
             steps {
                 script {
-                    // Restart Green deployment and bring down the Blue deployment
+                    echo "Switching traffic to Green server"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml restart'"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml down'"
                 }
