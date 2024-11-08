@@ -1,86 +1,85 @@
 pipeline {
     agent any
     environment {
-        DOCKER_IMAGE = 'your-docker-image'  // Replace with actual image name
-        DOCKER_REGISTRY = 'your-docker-registry'  // Replace with actual registry
-        BLUE_SERVER = 'blue.example.com'  // Replace with actual server
-        GREEN_SERVER = 'green.example.com'  // Replace with actual server
+        DOCKER_IMAGE = 'your-docker-image'
+        DOCKER_REGISTRY = 'your-docker-registry'
+        DOCKER_USERNAME = credentials('docker')  // Use Jenkins credentials ID 'docker' for Docker username
+        DOCKER_PASSWORD = credentials('docker')  // Use Jenkins credentials ID 'docker' for Docker password
+        BLUE_SERVER = 'blue.example.com'
+        GREEN_SERVER = 'green.example.com'
     }
     stages {
         stage('Clone Repo') {
             steps {
+                git 'https://github.com/manavanand2812/blue-green.git'
+            }
+        }
+        stage('Login to Docker Registry') {
+            steps {
                 script {
-                    // Ensure correct branch and repo URL
-                    git url: 'https://github.com/manavanand2812/blue-green.git', branch: 'main'
+                    // Login to Docker Registry
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image
+                    // Build the Docker image
                     sh 'docker build -t ${DOCKER_IMAGE} .'
                 }
             }
         }
-
         stage('Push Docker Image') {
             steps {
                 script {
-                    // Tag and push Docker image to the registry
+                    // Tag and push the Docker image
                     sh 'docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
                     sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
                 }
             }
         }
-
         stage('Deploy to Blue') {
             steps {
                 script {
-                    // Pull and deploy Docker image to Blue server
+                    // Deploy to the Blue server
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml up -d'"
                 }
             }
         }
-
         stage('Verify Blue') {
             steps {
                 input message: 'Verify if Blue deployment works', ok: 'Proceed'
             }
         }
-
         stage('Switch Traffic to Blue') {
             steps {
                 script {
-                    // Restart Blue server services and shut down Green server
+                    // Restart Blue deployment and bring down the Green deployment
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml restart'"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml down'"
                 }
             }
         }
-
         stage('Deploy to Green') {
             steps {
                 script {
-                    // Pull and deploy Docker image to Green server
+                    // Deploy to the Green server
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'"
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml up -d'"
                 }
             }
         }
-
         stage('Verify Green') {
             steps {
                 input message: 'Verify if Green deployment works', ok: 'Proceed'
             }
         }
-
         stage('Switch Traffic to Green') {
             steps {
                 script {
-                    // Restart Green server services and shut down Blue server
+                    // Restart Green deployment and bring down the Blue deployment
                     sh "ssh ubuntu@${GREEN_SERVER} 'docker-compose -f docker-compose.green.yml restart'"
                     sh "ssh ubuntu@${BLUE_SERVER} 'docker-compose -f docker-compose.blue.yml down'"
                 }
