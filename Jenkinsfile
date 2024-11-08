@@ -3,8 +3,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'your-docker-image'
         DOCKER_REGISTRY = 'your-docker-registry'
-        DOCKER_USERNAME = credentials('docker')  // Use Jenkins credentials ID 'docker' for Docker username
-        DOCKER_PASSWORD = credentials('docker')  // Use Jenkins credentials ID 'docker' for Docker password
+        DOCKER_USERNAME = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker username
+        DOCKER_PASSWORD = credentials('blue-green')  // Use Jenkins credentials ID 'blue-green' for Docker password
         BLUE_SERVER = 'blue.example.com'
         GREEN_SERVER = 'green.example.com'
     }
